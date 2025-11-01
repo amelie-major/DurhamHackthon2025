@@ -1,0 +1,13 @@
+scikit-learn
+# Optional explicit extras; pip will install dependencies like numpy/scipy automatically
+numpy
+scipy
+joblib
+
+# Web / API
+fastapi
+uvicorn[standard]
+pandas
+# Image handling (Pillow is the maintained fork of PIL)
+Pillow
+python-multipart

@@ -1,5 +1,0 @@
-scikit-learn
-# Optional explicit extras; pip will install dependencies like numpy/scipy automatically
-numpy
-scipy
-joblib
