@@ -1,0 +1,11 @@
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Model and data artifacts
+mnist_model.pkl
