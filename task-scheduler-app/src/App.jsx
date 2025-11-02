@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./App.css";
-
+import logo from "./assets/earth.png";
 function App() {
     const [attendees, setAttendees] = useState([]);
     const [office, setOffice] = useState("London");
@@ -127,6 +127,9 @@ function App() {
                             </tbody>
                         </table>
                     )}
+                </div>
+                <div>
+                    <img src={logo} className="spin" alt="Spinning logo" width="500" />
                 </div>
             </main>
         </div>

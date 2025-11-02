@@ -89,7 +89,14 @@ button {
     border: 1px solid var(--panel-border);
     padding: 8px;
 }
+.spin {
+  animation: spin 4s linear infinite;
+}
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 table {
     width: 100%;
     margin-top: 18px;
