@@ -1,35 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Digit Classifier</title>
+  <meta charset="UTF-8">
+  <title>Meeting Predictor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f8f9fa;
+      color: #333;
+    }
+    h2 {
+      color: #222;
+    }
+    input, button {
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #resultBox {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      width: fit-content;
+    }
+  </style>
 </head>
 <body>
-<input type="file" id="imageInput" accept="image/*">
-<button onclick="uploadImage()">Classify</button>
-<p id="predictionResult"></p>
-<script type="text/javascript">
-async function uploadImage() {
-    const input = document.getElementById('imageInput');
-    if(!input.files[0]) {
-        alert('Please select an image file.');
-        return;
-    }
-    const file = input.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
+  <h2>Upload JSON for Meeting Prediction</h2>
+  <input type="file" id="jsonInput" accept=".json">
+  <button onclick="uploadJSON()">Submit</button>
 
-    try {
-        const response = await fetch('http://localhost:8000/predict-image/', {
-            method: 'POST',
-            body: formData
+  <div id="resultBox" style="display:none;">
+    <h3>Prediction Result</h3>
+    <pre id="predictionResult"></pre>
+  </div>
+
+  <script>
+    async function uploadJSON() {
+      const input = document.getElementById('jsonInput');
+      const resultBox = document.getElementById('resultBox');
+      const resultText = document.getElementById('predictionResult');
+      resultBox.style.display = 'none';
+      resultText.textContent = '';
+
+      if (!input.files[0]) {
+        alert('Please select a JSON file.');
+        return;
+      }
+
+      try {
+        // Read the file
+        const file = input.files[0];
+        const text = await file.text();
+        const jsonData = JSON.parse(text);
+
+        // Send JSON data to backend
+        const response = await fetch('http://localhost:8000/predict-json/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(jsonData)
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert('Error: ' + (errorData.error || 'Server error'));
+          return;
+        }
+
         const result = await response.json();
-        document.getElementById('predictionResult').innerText = `Predicted Digit: ${result.prediction}`;
-    } catch (error) {
+
+        // Display nicely formatted result
+        resultBox.style.display = 'block';
+        resultText.textContent = JSON.stringify(result, null, 2);
+
+      } catch (error) {
         console.error('Error:', error);
+        alert('Invalid JSON or network error.');
+      }
     }
-}
-</script>
+  </script>
 </body>
 </html>

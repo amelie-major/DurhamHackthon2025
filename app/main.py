@@ -1,12 +1,11 @@
 import io
 import pickle
 from pathlib import Path
-
+import json
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
-import PIL.Image
-import PIL.ImageOps
-import numpy as np
+from pydantic import BaseModel
+import datetime
 from fastapi.middleware.cors import CORSMiddleware
 
 # Load model relative to this file so it works whether uvicorn is run from repo root
@@ -26,16 +25,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/predict-image/")
-async def predict_image(file: UploadFile = File(...)):
-    contents = await file.read()
-    pil_image = PIL.Image.open(io.BytesIO(contents)).convert("L")
-    pil_image = PIL.ImageOps.invert(pil_image)
-    pil_image = pil_image.resize((28, 28))
-    image = np.array(pil_image).astype(np.float32)  # keep 0–255 scale
-    image = image.reshape(1, -1)  # flatten to (1, 784)
-    prediction = model.predict(image)
-    return {"prediction": int(prediction[0])}
+# Pydantic models for request validation
+class AvailabilityWindow(BaseModel):
+    start: str
+    end: str
+
+class EventDuration(BaseModel):
+    days: int = 0
+    hours: int = 0
+
+class PredictionRequest(BaseModel):
+    attendees: dict[str, int]
+    availability_window: AvailabilityWindow
+    event_duration: EventDuration
+
+@app.post("/predict-json/")
+async def predict_json(data: PredictionRequest):
+    """
+    Receive JSON data in the following format:
+    {
+        "attendees": {"London": 2, "Paris": 3},
+        "availability_window": {"start": "2025-10-06T09:00:00Z", "end": "2025-10-07T17:00:00Z"},
+        "event_duration": {"days": 0, "hours": 2}
+    }
+    """
+
+    try:
+        # Extract values
+        attendees = data.attendees
+        availability_window = data.availability_window
+        event_duration = data.event_duration
+
+        # Parse availability window datetimes
+        try:
+            start_time = datetime.datetime.fromisoformat(availability_window.start.replace("Z", "+00:00"))
+            end_time = datetime.datetime.fromisoformat(availability_window.end.replace("Z", "+00:00"))
+        except ValueError:
+            return JSONResponse(status_code=400, content={"error": "Invalid datetime format"})
+
+        # Compute event duration as timedelta
+        duration = datetime.timedelta(
+            days=event_duration.days,
+            hours=event_duration.hours
+        )
+
+        # This is a placeholder for more complex prediction logic
+        num_total_attendees = sum(attendees.values())
+        offices = list(attendees.keys())
+
+        # Simple example: pick the first office as "predicted" meeting location
+        predicted_office = offices[0] if offices else "Unknown"
+
+        return {
+            "status": "success",
+            "num_total_attendees": num_total_attendees,
+            "offices": offices,
+            "availability_start": start_time.isoformat(),
+            "availability_end": end_time.isoformat(),
+            "event_duration_hours": duration.total_seconds() / 3600,
+            "prediction": predicted_office
+        }
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={"error": str(e)}
+        )
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -53,4 +108,3 @@ async def favicon():
     if fav.exists():
         return FileResponse(str(fav))
     return JSONResponse(status_code=204, content={})
-
